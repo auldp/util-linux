@@ -113,12 +113,12 @@ static void __attribute__((__noreturn__)) usage(void)
 	warnx(FMT);       \
 	errtryhelp(EINVAL);
 
-#define check_prctl(FMT...)                                                 \
-	if (errno == EINVAL) {                                              \
-		warn(FMT);                                                  \
-		errx(errno, "Does your kernel support CONFIG_SCHED_CORE?"); \
-	} else {                                                            \
-		err(errno, FMT);                                            \
+#define check_prctl(FMT...)                                                    \
+	if (errno == EINVAL) {                                                 \
+		warn(FMT);                                                     \
+		errx(errno, _("Does your kernel support CONFIG_SCHED_CORE?")); \
+	} else {                                                               \
+		err(errno, FMT);                                               \
 	}
 
 static sched_core_cookie core_sched_get_cookie(pid_t pid)
@@ -126,7 +126,7 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
 		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
-		check_prctl("Failed to get cookie from PID %d", pid);
+		check_prctl(_("Failed to get cookie from PID %d"), pid);
 	}
 	return cookie;
 }
@@ -134,7 +134,7 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 static void core_sched_create_cookie(pid_t pid, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
-		check_prctl("Failed to create cookie for PID %d", pid);
+		check_prctl(_("Failed to create cookie for PID %d"), pid);
 	}
 }
 
@@ -142,14 +142,14 @@ static void core_sched_pull_cookie(pid_t from)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
 		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
-		check_prctl("Failed to pull cookie from PID %d", from);
+		check_prctl(_("Failed to pull cookie from PID %d"), from);
 	}
 }
 
 static void core_sched_push_cookie(pid_t to, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
-		check_prctl("Failed to push cookie to PID %d", to);
+		check_prctl(_("Failed to push cookie to PID %d"), to);
 	}
 }
 
@@ -159,14 +159,14 @@ static void core_sched_copy_cookie(pid_t from, pid_t to,
 	core_sched_pull_cookie(from);
 	sched_core_cookie before = core_sched_get_cookie(from);
 	core_sched_push_cookie(to, to_type);
-	printf("%s: copied cookie 0x%lx from PID %d to PID %d\n",
+	printf(_("%s: copied cookie 0x%lx from PID %d to PID %d\n"),
 	       program_invocation_short_name, before, from, to);
 }
 
 static void core_sched_get_and_print_cookie(pid_t pid)
 {
 	sched_core_cookie after = core_sched_get_cookie(pid);
-	printf("%s: set cookie of PID %d to 0x%lx\n",
+	printf(_("%s: set cookie of PID %d to 0x%lx\n"),
 	       program_invocation_short_name, pid, after);
 }
 
@@ -189,7 +189,7 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 		pid_t pid = getpid();
 		core_sched_create_cookie(pid, args->type);
 		sched_core_cookie after = core_sched_get_cookie(pid);
-		printf("%s: set cookie of PID %d to 0x%lx\n",
+		printf(_("%s: set cookie of PID %d to 0x%lx\n"),
 		       program_invocation_short_name, pid, after);
 	}
 
@@ -208,7 +208,7 @@ static sched_core_scope parse_core_sched_type(char *str)
 		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
 	}
 
-	bad_usage("'%s' is an invalid option. Must be one of pid/tgid/pgid",
+	bad_usage(_("'%s' is an invalid option. Must be one of pid/tgid/pgid"),
 		  str);
 	__builtin_unreachable();
 }
@@ -247,11 +247,11 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 			break;
 		case 'p':
 			args->pid = strtopid_or_err(
-				optarg, "Failed to parse PID for -p/--pid");
+				optarg, _("Failed to parse PID for -p/--pid"));
 			break;
 		case 'd':
 			args->dest = strtopid_or_err(
-				optarg, "Failed to parse PID for -d/--dest");
+				optarg, _("Failed to parse PID for -d/--dest"));
 			break;
 		case 't':
 			args->type = parse_core_sched_type(optarg);
@@ -266,7 +266,7 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 	}
 
 	if (args->cmd == SCHED_CORE_CMD_COPY && !args->pid) {
-		bad_usage("--copy: requires a -p/--pid");
+		bad_usage(_("--copy: requires a -p/--pid"));
 	}
 
 	// More arguments have been passed, which means that the user wants to run
@@ -274,21 +274,21 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 	if (argc > optind) {
 		switch (args->cmd) {
 		case SCHED_CORE_CMD_GET:
-			bad_usage("Unknown command");
+			bad_usage(_("Unknown command"));
 			break;
 		case SCHED_CORE_CMD_NEW:
 			if (args->pid) {
-				bad_usage(
-					"--new: cannot accept both a -p/--pid and a command");
+				bad_usage(_(
+					"--new: cannot accept both a -p/--pid and a command"));
 			} else {
 				args->exec_argv_offset = optind;
 			}
 			break;
 		case SCHED_CORE_CMD_COPY:
 			if (args->dest) {
-				bad_usage(
+				bad_usage(_(
 					"--copy: cannot accept both a destination PID "
-					"-d/--dest and a command")
+					"-d/--dest and a command"))
 			} else {
 				args->exec_argv_offset = optind;
 			}
@@ -298,12 +298,12 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 
 	if (argc <= optind) {
 		if (args->cmd == SCHED_CORE_CMD_NEW && !args->pid) {
-			bad_usage(
-				"--new: requires either a -p/--pid or a command");
+			bad_usage(_(
+				"--new: requires either a -p/--pid or a command"));
 		}
 		if (args->cmd == SCHED_CORE_CMD_COPY && !args->dest) {
-			bad_usage(
-				"--copy: requires either a -d/--dest or a command");
+			bad_usage(_(
+				"--copy: requires either a -d/--dest or a command"));
 		}
 	}
 }
@@ -328,12 +328,12 @@ int main(int argc, char **argv)
 		if (args.pid) {
 			cookie = core_sched_get_cookie(args.pid);
 			if (cookie) {
-				printf("%s: cookie of pid %d is 0x%lx\n",
+				printf(_("%s: cookie of pid %d is 0x%lx\n"),
 				       program_invocation_short_name, args.pid,
 				       cookie);
 			} else {
 				errx(ENODATA,
-				     "pid %d doesn't have a core scheduling cookie",
+				     _("pid %d doesn't have a core scheduling cookie"),
 				     args.pid);
 			}
 		} else {
