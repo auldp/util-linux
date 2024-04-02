@@ -335,7 +335,6 @@ int main(int argc, char **argv)
 			}
 		} else {
 			usage();
-			exit(0);
 		}
 		break;
 	case SCHED_CORE_CMD_NEW:
@@ -354,6 +353,5 @@ int main(int argc, char **argv)
 		break;
 	default:
 		usage();
-		exit(1);
 	}
 }
