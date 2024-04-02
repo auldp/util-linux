@@ -63,6 +63,8 @@ struct args {
 	int exec_argv_offset;
 };
 
+static bool sched_core_verbose = false;
+
 static void __attribute__((__noreturn__)) usage(void)
 {
 	fputs(USAGE_HEADER, stdout);
@@ -102,6 +104,7 @@ static void __attribute__((__noreturn__)) usage(void)
 		  "                      The default is tgid."),
 		stdout);
 	fputs(USAGE_SEPARATOR, stdout);
+	fputsln(_(" -v, --verbose      verbose"), stdout);
 	fprintf(stdout,
 		USAGE_HELP_OPTIONS(
 			20)); /* char offset to align option descriptions */
@@ -157,17 +160,23 @@ static void core_sched_copy_cookie(pid_t from, pid_t to,
 				   sched_core_scope to_type)
 {
 	core_sched_pull_cookie(from);
-	sched_core_cookie before = core_sched_get_cookie(from);
 	core_sched_push_cookie(to, to_type);
-	printf(_("%s: copied cookie 0x%lx from PID %d to PID %d\n"),
-	       program_invocation_short_name, before, from, to);
+
+	if (sched_core_verbose) {
+		sched_core_cookie before = core_sched_get_cookie(from);
+		fprintf(stderr,
+			_("%s: copied cookie 0x%lx from PID %d to PID %d\n"),
+			program_invocation_short_name, before, from, to);
+	}
 }
 
 static void core_sched_get_and_print_cookie(pid_t pid)
 {
-	sched_core_cookie after = core_sched_get_cookie(pid);
-	printf(_("%s: set cookie of PID %d to 0x%lx\n"),
-	       program_invocation_short_name, pid, after);
+	if (sched_core_verbose) {
+		sched_core_cookie after = core_sched_get_cookie(pid);
+		fprintf(stderr, _("%s: set cookie of PID %d to 0x%lx\n"),
+			program_invocation_short_name, pid, after);
+	}
 }
 
 static void core_sched_exec_with_cookie(struct args *args, char **argv)
@@ -187,9 +196,7 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 	} else {
 		pid_t pid = getpid();
 		core_sched_create_cookie(pid, args->type);
-		sched_core_cookie after = core_sched_get_cookie(pid);
-		printf(_("%s: set cookie of PID %d to 0x%lx\n"),
-		       program_invocation_short_name, pid, after);
+		core_sched_get_and_print_cookie(pid);
 	}
 
 	if (execvp(argv[0], argv)) {
@@ -220,6 +227,7 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 		{ "pid", required_argument, NULL, 'p' },
 		{ "dest", required_argument, NULL, 'd' },
 		{ "type", required_argument, NULL, 't' },
+		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
@@ -232,7 +240,7 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 
 	int excl_st[ARRAY_SIZE(excl)] = UL_EXCL_STATUS_INIT;
 
-	while ((c = getopt_long(argc, argv, "ncp:d:t:Vh", longopts, NULL)) !=
+	while ((c = getopt_long(argc, argv, "ncp:d:t:vVh", longopts, NULL)) !=
 	       -1) {
 		err_exclusive_options(c, longopts, excl, excl_st);
 		switch (c) {
@@ -252,6 +260,9 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 			break;
 		case 't':
 			args->type = parse_core_sched_type(optarg);
+			break;
+		case 'v':
+			sched_core_verbose = true;
 			break;
 		case 'V':
 			print_version(EXIT_SUCCESS);
