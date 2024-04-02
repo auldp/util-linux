@@ -318,7 +318,7 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv, &args);
 
-	sched_core_cookie cookie = 0;
+	sched_core_cookie cookie;
 
 	switch (args.cmd) {
 	case SCHED_CORE_CMD_GET:
