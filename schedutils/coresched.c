@@ -210,7 +210,6 @@ static sched_core_scope parse_core_sched_type(char *str)
 
 	bad_usage(_("'%s' is an invalid option. Must be one of pid/tgid/pgid"),
 		  str);
-	__builtin_unreachable();
 }
 
 static void parse_arguments(int argc, char **argv, struct args *args)
