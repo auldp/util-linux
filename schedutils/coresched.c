@@ -116,12 +116,13 @@ static void __attribute__((__noreturn__)) usage(void)
 	warnx(FMT);       \
 	errtryhelp(EINVAL);
 
-#define check_prctl(FMT...)                                                    \
-	if (errno == EINVAL) {                                                 \
-		warn(FMT);                                                     \
-		errx(errno, _("Does your kernel support CONFIG_SCHED_CORE?")); \
-	} else {                                                               \
-		err(errno, FMT);                                               \
+#define err_prctl(FMT...)                                               \
+	if (errno == EINVAL) {                                          \
+		warn(FMT);                                              \
+		errx(ENOTSUP,                                           \
+		     _("Does your kernel support CONFIG_SCHED_CORE?")); \
+	} else {                                                        \
+		err(errno, FMT);                                        \
 	}
 
 static sched_core_cookie core_sched_get_cookie(pid_t pid)
@@ -129,7 +130,7 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
 		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
-		check_prctl(_("Failed to get cookie from PID %d"), pid);
+		err_prctl(_("Failed to get cookie from PID %d"), pid);
 	}
 	return cookie;
 }
@@ -137,7 +138,7 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 static void core_sched_create_cookie(pid_t pid, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
-		check_prctl(_("Failed to create cookie for PID %d"), pid);
+		err_prctl(_("Failed to create cookie for PID %d"), pid);
 	}
 }
 
@@ -145,14 +146,14 @@ static void core_sched_pull_cookie(pid_t from)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
 		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
-		check_prctl(_("Failed to pull cookie from PID %d"), from);
+		err_prctl(_("Failed to pull cookie from PID %d"), from);
 	}
 }
 
 static void core_sched_push_cookie(pid_t to, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
-		check_prctl(_("Failed to push cookie to PID %d"), to);
+		err_prctl(_("Failed to push cookie to PID %d"), to);
 	}
 }
 
