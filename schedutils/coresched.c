@@ -3,7 +3,7 @@
  *
  * coresched.c - manage core scheduling cookies for tasks
  *
- * Copyright (C) 2024 Thijs Raymakers
+ * Copyright (C) 2024 Thijs Raymakers, Phil Auld
  * Licensed under the EUPL v1.2
  */
 
