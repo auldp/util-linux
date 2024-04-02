@@ -47,31 +47,31 @@
 #define PR_SCHED_CORE_SCOPE_PROCESS_GROUP 2
 #endif
 
-typedef int core_sched_type_t;
-typedef unsigned long cookie_t;
+typedef int sched_core_scope;
+typedef unsigned long sched_core_cookie;
 typedef enum {
 	SCHED_CORE_CMD_GET,
 	SCHED_CORE_CMD_NEW,
 	SCHED_CORE_CMD_COPY,
-} core_sched_cmd_t;
+} sched_core_cmd;
 
 struct args {
 	pid_t pid;
 	pid_t dest;
-	core_sched_type_t type;
-	core_sched_cmd_t cmd;
+	sched_core_scope type;
+	sched_core_cmd cmd;
 	int exec_argv_offset;
 };
 
-cookie_t core_sched_get_cookie(pid_t pid);
-void core_sched_create_cookie(pid_t pid, core_sched_type_t type);
+sched_core_cookie core_sched_get_cookie(pid_t pid);
+void core_sched_create_cookie(pid_t pid, sched_core_scope type);
 void core_sched_pull_cookie(pid_t from);
-void core_sched_push_cookie(pid_t to, core_sched_type_t type);
-void core_sched_copy_cookie(pid_t from, pid_t to, core_sched_type_t to_type);
+void core_sched_push_cookie(pid_t to, sched_core_scope type);
+void core_sched_copy_cookie(pid_t from, pid_t to, sched_core_scope to_type);
 void core_sched_exec_with_cookie(struct args *args, char **argv);
 void core_sched_get_and_print_cookie(pid_t pid);
 
-core_sched_type_t parse_core_sched_type(char *str);
+sched_core_scope parse_core_sched_type(char *str);
 bool verify_arguments(struct args *args);
 void parse_arguments(int argc, char **argv, struct args *args);
 void set_pid_or_err(pid_t *dest, pid_t src, const char *err_msg);
@@ -89,9 +89,9 @@ static void __attribute__((__noreturn__)) usage(void);
 		err(errno, FMT);                                            \
 	}
 
-cookie_t core_sched_get_cookie(pid_t pid)
+sched_core_cookie core_sched_get_cookie(pid_t pid)
 {
-	cookie_t cookie = 0;
+	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
 		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
 		check_prctl("Failed to get cookie from PID %d", pid);
@@ -99,7 +99,7 @@ cookie_t core_sched_get_cookie(pid_t pid)
 	return cookie;
 }
 
-void core_sched_create_cookie(pid_t pid, core_sched_type_t type)
+void core_sched_create_cookie(pid_t pid, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
 		check_prctl("Failed to create cookie for PID %d", pid);
@@ -114,17 +114,17 @@ void core_sched_pull_cookie(pid_t from)
 	}
 }
 
-void core_sched_push_cookie(pid_t to, core_sched_type_t type)
+void core_sched_push_cookie(pid_t to, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
 		check_prctl("Failed to push cookie to PID %d", to);
 	}
 }
 
-void core_sched_copy_cookie(pid_t from, pid_t to, core_sched_type_t to_type)
+void core_sched_copy_cookie(pid_t from, pid_t to, sched_core_scope to_type)
 {
 	core_sched_pull_cookie(from);
-	cookie_t before = core_sched_get_cookie(from);
+	sched_core_cookie before = core_sched_get_cookie(from);
 	core_sched_push_cookie(to, to_type);
 	printf("%s: copied cookie 0x%lx from PID %d to PID %d\n",
 	       program_invocation_short_name, before, from, to);
@@ -148,7 +148,7 @@ void core_sched_exec_with_cookie(struct args *args, char **argv)
 	} else {
 		pid_t pid = getpid();
 		core_sched_create_cookie(pid, args->type);
-		cookie_t after = core_sched_get_cookie(pid);
+		sched_core_cookie after = core_sched_get_cookie(pid);
 		printf("%s: set cookie of PID %d to 0x%lx\n",
 		       program_invocation_short_name, pid, after);
 	}
@@ -160,12 +160,12 @@ void core_sched_exec_with_cookie(struct args *args, char **argv)
 
 void core_sched_get_and_print_cookie(pid_t pid)
 {
-	cookie_t after = core_sched_get_cookie(pid);
+	sched_core_cookie after = core_sched_get_cookie(pid);
 	printf("%s: set cookie of PID %d to 0x%lx\n",
 	       program_invocation_short_name, pid, after);
 }
 
-core_sched_type_t parse_core_sched_type(char *str)
+sched_core_scope parse_core_sched_type(char *str)
 {
 	if (!strncmp(str, "pid\0", 4)) {
 		return PR_SCHED_CORE_SCOPE_THREAD;
@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv, &args);
 
-	cookie_t cookie = 0;
+	sched_core_cookie cookie = 0;
 
 	switch (args.cmd) {
 	case SCHED_CORE_CMD_GET:
