@@ -200,11 +200,11 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 
 static sched_core_scope parse_core_sched_type(char *str)
 {
-	if (!strncmp(str, "pid\0", 4)) {
+	if (!strncmp(str, "pid", 4)) {
 		return PR_SCHED_CORE_SCOPE_THREAD;
-	} else if (!strncmp(str, "tgid\0", 5)) {
+	} else if (!strncmp(str, "tgid", 5)) {
 		return PR_SCHED_CORE_SCOPE_THREAD_GROUP;
-	} else if (!strncmp(str, "pgid\0", 5)) {
+	} else if (!strncmp(str, "pgid", 5)) {
 		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
 	}
 
