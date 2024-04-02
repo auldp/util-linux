@@ -63,123 +63,6 @@ struct args {
 	int exec_argv_offset;
 };
 
-sched_core_cookie core_sched_get_cookie(pid_t pid);
-void core_sched_create_cookie(pid_t pid, sched_core_scope type);
-void core_sched_pull_cookie(pid_t from);
-void core_sched_push_cookie(pid_t to, sched_core_scope type);
-void core_sched_copy_cookie(pid_t from, pid_t to, sched_core_scope to_type);
-void core_sched_exec_with_cookie(struct args *args, char **argv);
-void core_sched_get_and_print_cookie(pid_t pid);
-
-sched_core_scope parse_core_sched_type(char *str);
-bool verify_arguments(struct args *args);
-void parse_arguments(int argc, char **argv, struct args *args);
-void set_pid_or_err(pid_t *dest, pid_t src, const char *err_msg);
-static void __attribute__((__noreturn__)) usage(void);
-
-#define bad_usage(FMT...) \
-	warnx(FMT);       \
-	errtryhelp(EINVAL);
-
-#define check_prctl(FMT...)                                                 \
-	if (errno == EINVAL) {                                              \
-		warn(FMT);                                                  \
-		errx(errno, "Does your kernel support CONFIG_SCHED_CORE?"); \
-	} else {                                                            \
-		err(errno, FMT);                                            \
-	}
-
-sched_core_cookie core_sched_get_cookie(pid_t pid)
-{
-	sched_core_cookie cookie = 0;
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
-		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
-		check_prctl("Failed to get cookie from PID %d", pid);
-	}
-	return cookie;
-}
-
-void core_sched_create_cookie(pid_t pid, sched_core_scope type)
-{
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
-		check_prctl("Failed to create cookie for PID %d", pid);
-	}
-}
-
-void core_sched_pull_cookie(pid_t from)
-{
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
-		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
-		check_prctl("Failed to pull cookie from PID %d", from);
-	}
-}
-
-void core_sched_push_cookie(pid_t to, sched_core_scope type)
-{
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
-		check_prctl("Failed to push cookie to PID %d", to);
-	}
-}
-
-void core_sched_copy_cookie(pid_t from, pid_t to, sched_core_scope to_type)
-{
-	core_sched_pull_cookie(from);
-	sched_core_cookie before = core_sched_get_cookie(from);
-	core_sched_push_cookie(to, to_type);
-	printf("%s: copied cookie 0x%lx from PID %d to PID %d\n",
-	       program_invocation_short_name, before, from, to);
-}
-
-void core_sched_exec_with_cookie(struct args *args, char **argv)
-{
-	if (!args->exec_argv_offset) {
-		usage();
-	}
-
-	// Move the argument list to the first argument of the program
-	argv = &argv[args->exec_argv_offset];
-
-	// If a source PID is provided, try to copy the cookie from
-	// that PID. Otherwise, create a brand new cookie with the
-	// provided type.
-	if (args->pid) {
-		core_sched_pull_cookie(args->pid);
-		core_sched_get_and_print_cookie(args->pid);
-	} else {
-		pid_t pid = getpid();
-		core_sched_create_cookie(pid, args->type);
-		sched_core_cookie after = core_sched_get_cookie(pid);
-		printf("%s: set cookie of PID %d to 0x%lx\n",
-		       program_invocation_short_name, pid, after);
-	}
-
-	if (execvp(argv[0], argv)) {
-		errexec(argv[0]);
-	}
-}
-
-void core_sched_get_and_print_cookie(pid_t pid)
-{
-	sched_core_cookie after = core_sched_get_cookie(pid);
-	printf("%s: set cookie of PID %d to 0x%lx\n",
-	       program_invocation_short_name, pid, after);
-}
-
-sched_core_scope parse_core_sched_type(char *str)
-{
-	if (!strncmp(str, "pid\0", 4)) {
-		return PR_SCHED_CORE_SCOPE_THREAD;
-	} else if (!strncmp(str, "tgid\0", 5)) {
-		return PR_SCHED_CORE_SCOPE_THREAD_GROUP;
-	} else if (!strncmp(str, "pgid\0", 5)) {
-		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
-	}
-
-	bad_usage("'%s' is an invalid option. Must be one of pid/tgid/pgid",
-		  str);
-	__builtin_unreachable();
-}
-
 static void __attribute__((__noreturn__)) usage(void)
 {
 	fputs(USAGE_HEADER, stdout);
@@ -226,7 +109,111 @@ static void __attribute__((__noreturn__)) usage(void)
 	exit(EXIT_SUCCESS);
 }
 
-void parse_arguments(int argc, char **argv, struct args *args)
+#define bad_usage(FMT...) \
+	warnx(FMT);       \
+	errtryhelp(EINVAL);
+
+#define check_prctl(FMT...)                                                 \
+	if (errno == EINVAL) {                                              \
+		warn(FMT);                                                  \
+		errx(errno, "Does your kernel support CONFIG_SCHED_CORE?"); \
+	} else {                                                            \
+		err(errno, FMT);                                            \
+	}
+
+static sched_core_cookie core_sched_get_cookie(pid_t pid)
+{
+	sched_core_cookie cookie = 0;
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
+		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
+		check_prctl("Failed to get cookie from PID %d", pid);
+	}
+	return cookie;
+}
+
+static void core_sched_create_cookie(pid_t pid, sched_core_scope type)
+{
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
+		check_prctl("Failed to create cookie for PID %d", pid);
+	}
+}
+
+static void core_sched_pull_cookie(pid_t from)
+{
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
+		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
+		check_prctl("Failed to pull cookie from PID %d", from);
+	}
+}
+
+static void core_sched_push_cookie(pid_t to, sched_core_scope type)
+{
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
+		check_prctl("Failed to push cookie to PID %d", to);
+	}
+}
+
+static void core_sched_copy_cookie(pid_t from, pid_t to,
+				   sched_core_scope to_type)
+{
+	core_sched_pull_cookie(from);
+	sched_core_cookie before = core_sched_get_cookie(from);
+	core_sched_push_cookie(to, to_type);
+	printf("%s: copied cookie 0x%lx from PID %d to PID %d\n",
+	       program_invocation_short_name, before, from, to);
+}
+
+static void core_sched_get_and_print_cookie(pid_t pid)
+{
+	sched_core_cookie after = core_sched_get_cookie(pid);
+	printf("%s: set cookie of PID %d to 0x%lx\n",
+	       program_invocation_short_name, pid, after);
+}
+
+static void core_sched_exec_with_cookie(struct args *args, char **argv)
+{
+	if (!args->exec_argv_offset) {
+		usage();
+	}
+
+	// Move the argument list to the first argument of the program
+	argv = &argv[args->exec_argv_offset];
+
+	// If a source PID is provided, try to copy the cookie from
+	// that PID. Otherwise, create a brand new cookie with the
+	// provided type.
+	if (args->pid) {
+		core_sched_pull_cookie(args->pid);
+		core_sched_get_and_print_cookie(args->pid);
+	} else {
+		pid_t pid = getpid();
+		core_sched_create_cookie(pid, args->type);
+		sched_core_cookie after = core_sched_get_cookie(pid);
+		printf("%s: set cookie of PID %d to 0x%lx\n",
+		       program_invocation_short_name, pid, after);
+	}
+
+	if (execvp(argv[0], argv)) {
+		errexec(argv[0]);
+	}
+}
+
+static sched_core_scope parse_core_sched_type(char *str)
+{
+	if (!strncmp(str, "pid\0", 4)) {
+		return PR_SCHED_CORE_SCOPE_THREAD;
+	} else if (!strncmp(str, "tgid\0", 5)) {
+		return PR_SCHED_CORE_SCOPE_THREAD_GROUP;
+	} else if (!strncmp(str, "pgid\0", 5)) {
+		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
+	}
+
+	bad_usage("'%s' is an invalid option. Must be one of pid/tgid/pgid",
+		  str);
+	__builtin_unreachable();
+}
+
+static void parse_arguments(int argc, char **argv, struct args *args)
 {
 	int c;
 
