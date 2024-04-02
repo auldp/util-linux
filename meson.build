@@ -3125,8 +3125,8 @@ if opt and not is_disabler(exe)
   manadocs += ['schedutils/chrt.1.adoc',
                'schedutils/ionice.1.adoc',
                'schedutils/taskset.1.adoc',
-	       'schedutils/uclampset.1.adoc',
-         'schedutils/coresched.1.adoc']
+               'schedutils/uclampset.1.adoc',
+               'schedutils/coresched.1.adoc']
   bashcompletions += ['chrt', 'ionice', 'taskset', 'uclampset', 'coresched']
 endif
 
