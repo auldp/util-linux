@@ -172,9 +172,8 @@ static void core_sched_get_and_print_cookie(pid_t pid)
 
 static void core_sched_exec_with_cookie(struct args *args, char **argv)
 {
-	if (!args->exec_argv_offset) {
+	if (!args->exec_argv_offset)
 		usage();
-	}
 
 	// Move the argument list to the first argument of the program
 	argv = &argv[args->exec_argv_offset];
@@ -200,13 +199,12 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 
 static sched_core_scope parse_core_sched_type(char *str)
 {
-	if (!strncmp(str, "pid", 4)) {
+	if (!strncmp(str, "pid", 4))
 		return PR_SCHED_CORE_SCOPE_THREAD;
-	} else if (!strncmp(str, "tgid", 5)) {
+	else if (!strncmp(str, "tgid", 5))
 		return PR_SCHED_CORE_SCOPE_THREAD_GROUP;
-	} else if (!strncmp(str, "pgid", 5)) {
+	else if (!strncmp(str, "pgid", 5))
 		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
-	}
 
 	bad_usage(_("'%s' is an invalid option. Must be one of pid/tgid/pgid"),
 		  str);
@@ -349,11 +347,10 @@ int main(int argc, char **argv)
 		}
 		break;
 	case SCHED_CORE_CMD_COPY:
-		if (args.dest) {
+		if (args.dest)
 			core_sched_copy_cookie(args.pid, args.dest, args.type);
-		} else {
+		else
 			core_sched_exec_with_cookie(&args, argv);
-		}
 		break;
 	default:
 		usage();
