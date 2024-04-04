@@ -114,23 +114,14 @@ static void __attribute__((__noreturn__)) usage(void)
 
 #define bad_usage(FMT...) \
 	warnx(FMT);       \
-	errtryhelp(1);
-
-#define err_prctl(FMT...)                                               \
-	if (errno == EINVAL) {                                          \
-		warn(FMT);                                              \
-		errx(ENOTSUP,                                           \
-		     _("Does your kernel support CONFIG_SCHED_CORE?")); \
-	} else {                                                        \
-		err(1, FMT);                                            \
-	}
+	errtryhelp(EXIT_FAILURE);
 
 static sched_core_cookie core_sched_get_cookie(pid_t pid)
 {
 	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
 		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
-		err_prctl(_("Failed to get cookie from PID %d"), pid);
+		err(EXIT_FAILURE, _("Failed to get cookie from PID %d"), pid);
 	}
 	return cookie;
 }
@@ -138,7 +129,7 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 static void core_sched_create_cookie(pid_t pid, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
-		err_prctl(_("Failed to create cookie for PID %d"), pid);
+		err(EXIT_FAILURE, _("Failed to create cookie for PID %d"), pid);
 	}
 }
 
@@ -146,14 +137,14 @@ static void core_sched_pull_cookie(pid_t from)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
 		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
-		err_prctl(_("Failed to pull cookie from PID %d"), from);
+		err(EXIT_FAILURE, _("Failed to pull cookie from PID %d"), from);
 	}
 }
 
 static void core_sched_push_cookie(pid_t to, sched_core_scope type)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
-		err_prctl(_("Failed to push cookie to PID %d"), to);
+		err(EXIT_FAILURE, _("Failed to push cookie to PID %d"), to);
 	}
 }
 
@@ -203,6 +194,22 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 	if (execvp(argv[0], argv)) {
 		errexec(argv[0]);
 	}
+}
+
+// If PR_SCHED_CORE is not recognized, or not supported on this system,
+// then prctl will set errno to EINVAL. Assuming all other operands of
+// prctl are valid, we can use errno==EINVAL as a check to see whether
+// core scheduling is available on this system.
+static bool is_core_sched_supported(void)
+{
+	sched_core_cookie cookie = 0;
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, getpid(),
+		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
+		if (errno == EINVAL) {
+			return false;
+		}
+	}
+	return true;
 }
 
 static sched_core_scope parse_core_sched_type(char *str)
@@ -329,6 +336,10 @@ int main(int argc, char **argv)
 	close_stdout_atexit();
 
 	parse_arguments(argc, argv, &args);
+
+	if (!is_core_sched_supported()) {
+		errx(ENOTSUP, _("Does your kernel support CONFIG_SCHED_CORE?"));
+	}
 
 	sched_core_cookie cookie;
 
