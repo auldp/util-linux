@@ -114,7 +114,7 @@ static void __attribute__((__noreturn__)) usage(void)
 
 #define bad_usage(FMT...) \
 	warnx(FMT);       \
-	errtryhelp(EINVAL);
+	errtryhelp(1);
 
 #define err_prctl(FMT...)                                               \
 	if (errno == EINVAL) {                                          \
@@ -122,7 +122,7 @@ static void __attribute__((__noreturn__)) usage(void)
 		errx(ENOTSUP,                                           \
 		     _("Does your kernel support CONFIG_SCHED_CORE?")); \
 	} else {                                                        \
-		err(errno, FMT);                                        \
+		err(1, FMT);                                            \
 	}
 
 static sched_core_cookie core_sched_get_cookie(pid_t pid)
