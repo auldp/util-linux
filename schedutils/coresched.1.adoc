@@ -14,3 +14,50 @@ coresched(1) manpage
 == NAME
 
 coresched - manage core scheduling cookies for tasks
+
+== SYNOPSIS
+
+*coresched* [options] *-p* _pid_
+
+*coresched* [options] \-- _command_ [_argument_...]
+
+== DESCRIPTION
+The *coresched* command is used to retrieve or modify the core scheduling cookies of a running process given
+its _pid_, or to spawn a new _command_ with core scheduling cookies.
+
+== FUNCTIONS
+
+== OPTIONS
+
+== EXAMPLES
+
+== PERMISSIONS
+
+== RETURN VALUE
+
+== NOTES
+
+== AUTHORS
+Written by Thijs Raymakers
+
+== COPYRIGHT
+
+//TRANSLATORS: Keep {copyright} untranslated.
+Copyright {copyright} 2024 Thijs Raymakers. This is free software licensed under the EUPL.
+
+== SEE ALSO
+*chrt*(1),
+*nice*(1),
+*renice*(1),
+*taskset*(1),
+*sched*(7)
+
+The Linux kernel source files _Documentation/admin-guide/hw-vuln/core-scheduling.rst_
+
+include::man-common/bugreports.adoc[]
+
+include::man-common/footer.adoc[]
+
+ifdef::translation[]
+include::man-common/translation.adoc[]
+endif::[]
