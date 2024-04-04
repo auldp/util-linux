@@ -17,12 +17,12 @@ coresched - manage core scheduling cookies for tasks
 
 == SYNOPSIS
 
-*coresched* [options] *-p* _pid_
+*{command}* [options] *-p* _pid_
 
-*coresched* [options] \-- _command_ [_argument_...]
+*{command}* [options] \-- _command_ [_argument_...]
 
 == DESCRIPTION
-The *coresched* command is used to retrieve or modify the core scheduling cookies of a running process given its _pid_, or to spawn a new _command_ with core scheduling cookies.
+The *{command}* command is used to retrieve or modify the core scheduling cookies of a running process given its _pid_, or to spawn a new _command_ with core scheduling cookies.
 
 Core scheduling allows you to define groups of tasks that are allowed to share a physical core.
 This is done by assigning a cookie to each task.
@@ -47,7 +47,7 @@ When using *--copy*, specify a destination PID where you want to copy the cookie
 *-t*, *--type* _TYPE_::
 The type of the PID whose cookie will be modified. This can be one of three values:
 - *pid*, or process ID
-- *tgid*, or thread group ID
+- *tgid*, or thread group ID (default value)
 - *pgid*, or process group ID
 
 *-v*, *--verbose*::
@@ -60,17 +60,38 @@ Display help text and exit.
 Print version and exit.
 
 == EXAMPLES
+Get the core scheduling cookie of a task with PID _123_{colon}::
+*{command} -p* _123_
+
+Give a task with PID _123_ a new core scheduling cookie{colon}::
+*{command} --new -p* _123_
+
+Spawn a new task with a new core scheduling cookie{colon}::
+*{command} --new* \-- _command_ [_argument_...]
+
+Copy the cookie from a task with pid _123_ to another task with pid _456_{colon}::
+*{command} --copy -p* _123_ *-d* _456_
+
+Copy the cookie from a task with pid _123_ to a new task _command_{colon}::
+*{command} --copy -p* _123_ \-- _command_ [_argument_...]
+
+Copy the cookie from a task with pid _123_ to the process group ID _456_{colon}::
+*{command} --copy -p* _123_ *-t* pgid *-d* _456_
 
 == PERMISSIONS
+When retrieving or modifying the core scheduling cookie of a process, you need to have *PTRACE_MODE_READ_REALCREDS* ptrace access to that process.
+See the section "Ptrace access mode checking" in *ptrace*(2) for more information.
 
 == RETURN VALUE
+On success, *{command}* returns 0.
+If *{command}* fails, it will print an error and return 1.
+If core scheduling is not supported with your kernel (e.g. because *CONFIG_SCHED_CORE*=n), then it will return 95 (*ENOTSUP*).
 
 == AUTHORS
 Written by Thijs Raymakers
 
 == COPYRIGHT
 
-//TRANSLATORS: Keep {copyright} untranslated.
 Copyright {copyright} 2024 Thijs Raymakers. This is free software licensed under the EUPL.
 
 == SEE ALSO
@@ -78,6 +99,7 @@ Copyright {copyright} 2024 Thijs Raymakers. This is free software licensed under
 *nice*(1),
 *renice*(1),
 *taskset*(1),
+*ptrace*(2),
 *sched*(7)
 
 The Linux kernel source files _Documentation/admin-guide/hw-vuln/core-scheduling.rst_
