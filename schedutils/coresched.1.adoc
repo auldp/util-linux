@@ -88,11 +88,12 @@ If *{command}* fails, it will print an error and return 1.
 If core scheduling is not supported with your kernel (e.g. because *CONFIG_SCHED_CORE*=n), then it will return 95 (*ENOTSUP*).
 
 == AUTHORS
-Written by Thijs Raymakers
+mailto:thijs@raymakers.nl[Thijs Raymakers],
+mailto:pauld@redhat.com[Phil Auld]
 
 == COPYRIGHT
 
-Copyright {copyright} 2024 Thijs Raymakers. This is free software licensed under the EUPL.
+Copyright {copyright} 2024 Thijs Raymakers and Phil Auld. This is free software licensed under the EUPL.
 
 == SEE ALSO
 *chrt*(1),
