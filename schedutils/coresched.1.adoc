@@ -22,20 +22,48 @@ coresched - manage core scheduling cookies for tasks
 *coresched* [options] \-- _command_ [_argument_...]
 
 == DESCRIPTION
-The *coresched* command is used to retrieve or modify the core scheduling cookies of a running process given
-its _pid_, or to spawn a new _command_ with core scheduling cookies.
+The *coresched* command is used to retrieve or modify the core scheduling cookies of a running process given its _pid_, or to spawn a new _command_ with core scheduling cookies.
+
+Core scheduling allows you to define groups of tasks that are allowed to share a physical core.
+This is done by assigning a cookie to each task.
+Only tasks have the same cookie are allowed to be scheduled on the same physical core.
+
+It is possible to either assign a new random cookie to a task, or copy a cookie from another task. It is not possible to choose the value of the cookie.
 
 == FUNCTIONS
+*-n*, *--new*::
+Assign a new cookie to an existing PID or to execute _command_ with a new cookie.
+
+*-c*, *--copy*::
+Copy the cookie from an existing PID to another PID, or execute _command_ with that copied cookie.
 
 == OPTIONS
+*-p*, *--pid* _PID_::
+Operate on an existing PID and do not launch a new task.
+
+*-d*, *--dest* _PID_::
+When using *--copy*, specify a destination PID where you want to copy the cookie to.
+
+*-t*, *--type* _TYPE_::
+The type of the PID whose cookie will be modified. This can be one of three values:
+- *pid*, or process ID
+- *tgid*, or thread group ID
+- *pgid*, or process group ID
+
+*-v*, *--verbose*::
+Show extra information when modifying cookies of tasks.
+
+*-h*, *--help*::
+Display help text and exit.
+
+*-V*, *--version*::
+Print version and exit.
 
 == EXAMPLES
 
 == PERMISSIONS
 
 == RETURN VALUE
-
-== NOTES
 
 == AUTHORS
 Written by Thijs Raymakers
