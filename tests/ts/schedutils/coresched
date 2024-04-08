@@ -22,23 +22,22 @@ ts_check_test_command "$TS_CMD_CORESCHED"
 # - Any other cookie is replaced by `DIFFERENT_COOKIE`
 # The behavior of coresched does not depend on the exact values of these cookies, so using
 # placeholder values does not change the behavior tests.
-ts_init_subtest "get-own-pid-no-cookie"
-$TS_CMD_CORESCHED -p $$ 3>&2 2>&1 1>&3 | sed "s/$$/OWN_PID/g" >> "$TS_OUTPUT"
-ts_finalize_subtest
-
 ts_init_subtest "set-cookie-own-pid"
-CORESCHED_OUTPUT=$($TS_CMD_CORESCHED -v -n -p $$ 3>&2 2>&1 1>&3 | sed "s/$$/OWN_PID/g")
+CORESCHED_OUTPUT=$( ($TS_CMD_CORESCHED -v -n -p $$ | tee -a "$TS_OUTPUT") 3>&1 1>&2 2>&3 | sed "s/$$/OWN_PID/g")
 CORESCHED_COOKIE=$(echo "$CORESCHED_OUTPUT" | sed 's/^.*\(0x.*$\)/\1/g')
+if [ -z "$CORESCHED_COOKIE" ]; then
+  ts_failed "empty value for CORESCHED_COOKIE "
+fi
 CORESCHED_OUTPUT=$(echo "$CORESCHED_OUTPUT" | sed "s/$CORESCHED_COOKIE/COOKIE/g")
-echo "$CORESCHED_OUTPUT" >> "$TS_OUTPUT"
+echo "$CORESCHED_OUTPUT" >> "$TS_ERRLOG"
 ts_finalize_subtest
 
 ts_init_subtest "get-own-pid-with-cookie"
-$TS_CMD_CORESCHED -p $$ | sed "s/$$/OWN_PID/g" | sed "s/$CORESCHED_COOKIE/COOKIE/g" >> "$TS_OUTPUT"
+$TS_CMD_CORESCHED -p $$ 2>> "$TS_ERRLOG" | sed "s/$$/OWN_PID/g" | sed "s/$CORESCHED_COOKIE/COOKIE/g" >> "$TS_OUTPUT"
 ts_finalize_subtest
 
 ts_init_subtest "spawn-child-with-new-cookie"
-$TS_CMD_CORESCHED -n -- /bin/bash -c "$TS_CMD_CORESCHED -p \$\$" \
+$TS_CMD_CORESCHED -n -- "$TS_CMD_CORESCHED" 2>> "$TS_ERRLOG" \
   | sed 's/^.*\(0x.*$\)/\1/g' \
   | sed "s/$CORESCHED_COOKIE/SAME_COOKIE/g" \
   | sed "s/0x.*$/DIFFERENT_COOKIE/g" >> "$TS_OUTPUT"
@@ -46,7 +45,7 @@ ts_finalize_subtest
 
 ts_init_subtest "change-cookie-of-parent"
 $TS_CMD_CORESCHED -n -- /bin/bash -c "$TS_CMD_CORESCHED -c -p \$\$ -d $$"
-$TS_CMD_CORESCHED -p $$ \
+$TS_CMD_CORESCHED -p $$ 2>> "$TS_ERRLOG" \
   | sed "s/$$/OWN_PID/g" \
   | sed "s/$CORESCHED_COOKIE/COOKIE/g" \
   | sed "s/0x.*$/DIFFERENT_COOKIE/g" >> "$TS_OUTPUT"
