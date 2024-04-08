@@ -210,11 +210,11 @@ static bool is_core_sched_supported(void)
 
 static sched_core_scope parse_core_sched_type(char *str)
 {
-	if (!strncmp(str, "pid", 4))
+	if (!strcmp(str, "pid"))
 		return PR_SCHED_CORE_SCOPE_THREAD;
-	else if (!strncmp(str, "tgid", 5))
+	else if (!strcmp(str, "tgid"))
 		return PR_SCHED_CORE_SCOPE_THREAD_GROUP;
-	else if (!strncmp(str, "pgid", 5))
+	else if (!strcmp(str, "pgid"))
 		return PR_SCHED_CORE_SCOPE_PROCESS_GROUP;
 
 	bad_usage(_("'%s' is an invalid option. Must be one of pid/tgid/pgid"),
