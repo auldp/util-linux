@@ -87,7 +87,7 @@ See the section "Ptrace access mode checking" in *ptrace*(2) for more informatio
 == RETURN VALUE
 On success, *{command}* returns 0.
 If *{command}* fails, it will print an error and return 1.
-If core scheduling is not supported with your kernel (e.g. because *CONFIG_SCHED_CORE*=n), then it will return 95 (*ENOTSUP*).
+If core scheduling is not supported with your kernel (e.g. because *CONFIG_SCHED_CORE*=n), then it will return 95 (*EOPNOTSUPP*).
 
 == AUTHORS
 mailto:thijs@raymakers.nl[Thijs Raymakers],

@@ -7,6 +7,7 @@
  * Licensed under the EUPL v1.2
  */
 
+#include <asm-generic/errno.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -329,7 +330,8 @@ int main(int argc, char **argv)
 	parse_arguments(argc, argv, &args);
 
 	if (!is_core_sched_supported())
-		errx(ENOTSUP, _("Does your kernel support CONFIG_SCHED_CORE?"));
+		errx(EOPNOTSUPP,
+		     _("Does your kernel support CONFIG_SCHED_CORE?"));
 
 	sched_core_cookie cookie;
 
