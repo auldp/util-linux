@@ -120,32 +120,28 @@ static sched_core_cookie core_sched_get_cookie(pid_t pid)
 {
 	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, pid,
-		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
+		  PR_SCHED_CORE_SCOPE_THREAD, &cookie))
 		err(EXIT_FAILURE, _("Failed to get cookie from PID %d"), pid);
-	}
 	return cookie;
 }
 
 static void core_sched_create_cookie(pid_t pid, sched_core_scope type)
 {
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0)) {
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_CREATE, pid, type, 0))
 		err(EXIT_FAILURE, _("Failed to create cookie for PID %d"), pid);
-	}
 }
 
 static void core_sched_pull_cookie(pid_t from)
 {
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_FROM, from,
-		  PR_SCHED_CORE_SCOPE_THREAD, 0)) {
+		  PR_SCHED_CORE_SCOPE_THREAD, 0))
 		err(EXIT_FAILURE, _("Failed to pull cookie from PID %d"), from);
-	}
 }
 
 static void core_sched_push_cookie(pid_t to, sched_core_scope type)
 {
-	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0)) {
+	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_SHARE_TO, to, type, 0))
 		err(EXIT_FAILURE, _("Failed to push cookie to PID %d"), to);
-	}
 }
 
 static void core_sched_copy_cookie(pid_t from, pid_t to,
@@ -191,9 +187,8 @@ static void core_sched_exec_with_cookie(struct args *args, char **argv)
 		core_sched_get_and_print_cookie(pid);
 	}
 
-	if (execvp(argv[0], argv)) {
+	if (execvp(argv[0], argv))
 		errexec(argv[0]);
-	}
 }
 
 // If PR_SCHED_CORE is not recognized, or not supported on this system,
@@ -204,11 +199,10 @@ static bool is_core_sched_supported(void)
 {
 	sched_core_cookie cookie = 0;
 	if (prctl(PR_SCHED_CORE, PR_SCHED_CORE_GET, getpid(),
-		  PR_SCHED_CORE_SCOPE_THREAD, &cookie)) {
-		if (errno == EINVAL) {
+		  PR_SCHED_CORE_SCOPE_THREAD, &cookie))
+		if (errno == EINVAL)
 			return false;
-		}
-	}
+
 	return true;
 }
 
@@ -337,9 +331,8 @@ int main(int argc, char **argv)
 
 	parse_arguments(argc, argv, &args);
 
-	if (!is_core_sched_supported()) {
+	if (!is_core_sched_supported())
 		errx(ENOTSUP, _("Does your kernel support CONFIG_SCHED_CORE?"));
-	}
 
 	sched_core_cookie cookie;
 
@@ -347,15 +340,14 @@ int main(int argc, char **argv)
 	case SCHED_CORE_CMD_GET:
 		if (args.pid) {
 			cookie = core_sched_get_cookie(args.pid);
-			if (cookie) {
+			if (cookie)
 				printf(_("%s: cookie of pid %d is 0x%lx\n"),
 				       program_invocation_short_name, args.pid,
 				       cookie);
-			} else {
+			else
 				errx(ENODATA,
 				     _("pid %d doesn't have a core scheduling cookie"),
 				     args.pid);
-			}
 		} else {
 			usage();
 		}
