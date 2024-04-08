@@ -37,7 +37,7 @@ Assign a new cookie to an existing PID or to execute _command_ with a new cookie
 *-c*, *--copy*::
 Copy the cookie from an existing PID to another PID, or execute _command_ with that copied cookie.
 
-If no function is specified, it will retrieve and print the cookie of a task.
+If no function is specified, it will print the cookie of the current task, or of the task specified with the *-p* option.
 
 == OPTIONS
 *-p*, *--pid* _PID_::
@@ -62,6 +62,9 @@ Display help text and exit.
 Print version and exit.
 
 == EXAMPLES
+Get the core scheduling cookie of the {command} task itself, usually inherited from its parent{colon}::
+*{command}*
+
 Get the core scheduling cookie of a task with PID _123_{colon}::
 *{command} -p* _123_
 

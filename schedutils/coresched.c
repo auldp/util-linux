@@ -334,22 +334,13 @@ int main(int argc, char **argv)
 		     _("Does your kernel support CONFIG_SCHED_CORE?"));
 
 	sched_core_cookie cookie;
+	pid_t pid;
 
 	switch (args.cmd) {
 	case SCHED_CORE_CMD_GET:
-		if (args.pid) {
-			cookie = core_sched_get_cookie(args.pid);
-			if (cookie)
-				printf(_("%s: cookie of pid %d is 0x%lx\n"),
-				       program_invocation_short_name, args.pid,
-				       cookie);
-			else
-				errx(ENODATA,
-				     _("pid %d doesn't have a core scheduling cookie"),
-				     args.pid);
-		} else {
-			usage();
-		}
+		pid = args.pid ? args.pid : getpid();
+		cookie = core_sched_get_cookie(pid);
+		printf(_("cookie of pid %d is 0x%lx\n"), pid, cookie);
 		break;
 	case SCHED_CORE_CMD_NEW:
 		if (args.pid) {
