@@ -7,7 +7,7 @@
  * Licensed under the EUPL v1.2
  */
 
-#include <asm-generic/errno.h>
+#include <errno.h>
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
