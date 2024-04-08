@@ -112,9 +112,11 @@ static void __attribute__((__noreturn__)) usage(void)
 	exit(EXIT_SUCCESS);
 }
 
-#define bad_usage(FMT...) \
-	warnx(FMT);       \
-	errtryhelp(EXIT_FAILURE);
+#define bad_usage(FMT...)                 \
+	do {                              \
+		warnx(FMT);               \
+		errtryhelp(EXIT_FAILURE); \
+	} while (0)
 
 static sched_core_cookie core_sched_get_cookie(pid_t pid)
 {
@@ -275,9 +277,8 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 		}
 	}
 
-	if (args->cmd == SCHED_CORE_CMD_COPY && !args->pid) {
+	if (args->cmd == SCHED_CORE_CMD_COPY && !args->pid)
 		bad_usage(_("--copy: requires a -p/--pid"));
-	}
 
 	// More arguments have been passed, which means that the user wants to run
 	// another program with a core scheduling cookie.
@@ -287,34 +288,30 @@ static void parse_arguments(int argc, char **argv, struct args *args)
 			bad_usage(_("Unknown command"));
 			break;
 		case SCHED_CORE_CMD_NEW:
-			if (args->pid) {
+			if (args->pid)
 				bad_usage(_(
 					"--new: cannot accept both a -p/--pid and a command"));
-			} else {
+			else
 				args->exec_argv_offset = optind;
-			}
 			break;
 		case SCHED_CORE_CMD_COPY:
-			if (args->dest) {
+			if (args->dest)
 				bad_usage(_(
 					"--copy: cannot accept both a destination PID "
-					"-d/--dest and a command"))
-			} else {
+					"-d/--dest and a command"));
+			else
 				args->exec_argv_offset = optind;
-			}
 			break;
 		}
 	}
 
 	if (argc <= optind) {
-		if (args->cmd == SCHED_CORE_CMD_NEW && !args->pid) {
+		if (args->cmd == SCHED_CORE_CMD_NEW && !args->pid)
 			bad_usage(_(
 				"--new: requires either a -p/--pid or a command"));
-		}
-		if (args->cmd == SCHED_CORE_CMD_COPY && !args->dest) {
+		if (args->cmd == SCHED_CORE_CMD_COPY && !args->dest)
 			bad_usage(_(
 				"--copy: requires either a -d/--dest or a command"));
-		}
 	}
 }
 
